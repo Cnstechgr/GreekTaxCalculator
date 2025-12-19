@@ -1,0 +1,263 @@
+// Greek Tax Calculator - Prisma Schema
+// Comprehensive database schema for all tax calculation scenarios
+
+generator client {
+    provider = "prisma-client-js"
+    binaryTargets = ["native", "linux-musl-arm64-openssl-3.0.x"]
+    output = "/home/ubuntu/greek_tax_calculator/nextjs_space/node_modules/.prisma/client"
+}
+
+datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+}
+
+// User authentication model
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  password      String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  accounts      Account[]
+  sessions      Session[]
+  businesses    Business[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// Business entity - stores basic business information
+model Business {
+  id                      String                   @id @default(cuid())
+  userId                  String
+  user                    User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Business Information (Greek labels in comments)
+  businessName            String                   // ΕΠΩΝΥΜΙΑ / Όνομα Επιχείρησης
+  activity                String                   // ΔΡΑΣΤΗΡΙΟΤΗΤΑ
+  address                 String                   // Δ/ΝΣΗ
+  taxId                   String                   // ΑΦΜ (9 digits)
+  
+  // Metadata
+  createdAt               DateTime                 @default(now())
+  updatedAt               DateTime                 @updatedAt
+  lastCalculationDate     DateTime?
+  
+  // Related calculations
+  individualCalculations  IndividualCalculation[]
+  companyCalculations     CompanyCalculation[]
+  employeeIncomes         EmployeeIncome[]
+  
+  @@index([userId])
+  @@index([taxId])
+}
+
+// Individual Business Calculation (Ατομική)
+// Stores all data for one fiscal year
+model IndividualCalculation {
+  id                      String    @id @default(cuid())
+  businessId              String
+  business                Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  
+  // Fiscal year
+  year                    Int       // e.g., 2025
+  isPreviousYear          Boolean   @default(false) // true for comparison year (2024)
+  
+  // INCOME STATEMENT INPUTS (Rows 9-17)
+  netTurnover             Float     @default(0) // B9: Κύκλος εργασιών (καθαρός)
+  otherOrdinaryIncome     Float     @default(0) // B10: Λοιπά συνήθη έσοδα
+  inventoryChanges        Float     @default(0) // B11: Μεταβολές αποθεμάτων
+  purchasesGoodsMaterials Float     @default(0) // B12: Αγορές εμπορευμάτων (negative)
+  employeeBenefits        Float     @default(0) // B13: Παροχές σε εργαζόμενους (negative)
+  depreciation            Float     @default(0) // B14: Αποσβέσεις (negative)
+  otherExpensesLosses     Float     @default(0) // B15: Λοιπά έξοδα και ζημιές (negative)
+  otherIncomeGains        Float     @default(0) // B16: Λοιπά έσοδα και κέρδη
+  interestNet             Float     @default(0) // B17: Τόκοι και συναφή κονδύλια (negative)
+  
+  // TAX ADJUSTMENTS (Rows 19-23)
+  adjustments             Float     @default(0) // B19: Αναμορφώσεις
+  carriedForwardLosses    Float     @default(0) // B21: Μεταφερόμενες ζημίες προηγ. Χρήσεων
+  deemedTaxation          Float     @default(0) // B23: Τεκμαρτή φορολόγηση
+  
+  // WITHHOLDINGS & PREPAYMENTS (Rows 27-28)
+  businessWithholdings    Float     @default(0) // B27: Παρακρατούμενοι από επιχειρηματική
+  previousYearPrepayment  Float     @default(0) // C28: Προκ/λη Προηγ/νης Χρήσης (input for prev year)
+  
+  // CALCULATED RESULTS (stored for reference)
+  resultBeforeTax         Float?    // B18: Αποτέλεσμα προ φόρων (calculated)
+  adjustedResults         Float?    // B20: Αναμορφωμένα αποτελέσματα
+  taxableResults          Float?    // B22: Φορολογητέα αποτελέσματα (1)
+  taxableIncome           Float?    // B24: Φορολογητέο Εισόδημα (max of 1 & 2)
+  taxDue                  Float?    // B25: Φόρος που αναλογεί
+  prepaymentNextYear      Float?    // B26: Προκ/λη Επομ. Χρήσης
+  totalTaxDeclaration     Float?    // B29: ΣΥΝΟΛΟ ΦΟΡΟΥ ΔΗΛΩΣΗΣ
+  minimumCardSpending     Float?    // B31: ΕΛΑΧΙΣΤΟ ΠΟΣΟ ΔΑΠΑΝΩΝ ΜΕ ΚΑΡΤΑ
+  totalIncome             Float?    // B35: ΣΥΝΟΛΙΚΟ ΕΙΣΟΔΗΜΑ
+  totalTaxes              Float?    // B36: ΣΥΝΟΛΟ ΦΟΡΩΝ
+  netIncome               Float?    // B37: ΚΑΘΑΡΟ ΕΙΣΟΔΗΜΑ
+  
+  // Metadata
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+  
+  @@index([businessId])
+  @@index([year])
+  @@unique([businessId, year])
+}
+
+// Company Calculation (Εταιρεία)
+// Similar to Individual but with corporate tax rules
+model CompanyCalculation {
+  id                      String    @id @default(cuid())
+  businessId              String
+  business                Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  
+  // Fiscal year
+  year                    Int       // e.g., 2025
+  isPreviousYear          Boolean   @default(false)
+  
+  // INCOME STATEMENT INPUTS (same as Individual, Rows 9-17)
+  netTurnover             Float     @default(0)
+  otherOrdinaryIncome     Float     @default(0)
+  inventoryChanges        Float     @default(0)
+  purchasesGoodsMaterials Float     @default(0)
+  employeeBenefits        Float     @default(0)
+  depreciation            Float     @default(0)
+  otherExpensesLosses     Float     @default(0)
+  otherIncomeGains        Float     @default(0)
+  interestNet             Float     @default(0)
+  
+  // TAX ADJUSTMENTS (Rows 19-21, NO deemed taxation for companies)
+  adjustments             Float     @default(0)
+  carriedForwardLosses    Float     @default(0)
+  
+  // COMPANY-SPECIFIC FIELDS (Rows 25-27)
+  businessWithholdings    Float     @default(0) // B25: Παρακρατούμενοι
+  previousYearPrepayment  Float     @default(0) // C26: Προκ/λη Προηγ/νης Χρήσης
+  professionalFee         Float     @default(0) // B27: Τέλος Επιτηδεύματος
+  
+  // CALCULATED RESULTS (22% corporate tax)
+  resultBeforeTax         Float?    // B18
+  adjustedResults         Float?    // B20
+  taxableResults          Float?    // B22 (no deemed taxation for companies)
+  taxDue                  Float?    // B23: 22% flat rate
+  prepaymentNextYear      Float?    // B24: 80% of tax (vs 55% for individuals)
+  totalTaxDeclaration     Float?    // B28
+  totalIncome             Float?    // B33
+  totalTaxes              Float?    // B34
+  netIncome               Float?    // B35
+  
+  // Metadata
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+  
+  @@index([businessId])
+  @@index([year])
+  @@unique([businessId, year])
+}
+
+// Employee Income Data (Μισθωτές)
+// Additional income from employment
+model EmployeeIncome {
+  id                      String    @id @default(cuid())
+  businessId              String
+  business                Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  
+  // Fiscal year
+  year                    Int
+  isPreviousYear          Boolean   @default(false)
+  
+  // EMPLOYEE INCOME INPUTS
+  employeeIncome          Float     @default(0) // B24: Μισθωτές υπηρεσίες (3)
+  taxReductions           Float     @default(0) // B27: Μειώσεις από τον φόρο
+  employeeWithholdings    Float     @default(0) // B30: Παρακρατούμενοι από μισθωτές
+  
+  // CALCULATED RESULTS (combined with business income)
+  totalTaxableIncome      Float?    // B25: Including employee income
+  totalIncomeTax          Float?    // B26: Progressive tax on total
+  netTaxDue               Float?    // B28: After reductions
+  businessTaxOnly         Float?    // B45: For prepayment calculation (business only)
+  prepaymentNextYear      Float?    // B29: Based on business tax only
+  totalTaxDeclaration     Float?    // B33
+  minimumCardSpending     Float?    // B35
+  totalIncome             Float?    // B39
+  totalTaxes              Float?    // B40
+  netIncome               Float?    // B41
+  
+  // Metadata
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+  
+  @@index([businessId])
+  @@index([year])
+  @@unique([businessId, year])
+}
+
+// Saved Calculations History
+// Stores snapshots of calculations for audit trail
+model CalculationHistory {
+  id                String    @id @default(cuid())
+  userId            String
+  businessId        String
+  calculationType   String    // "individual", "company", "combined", "employee", "full"
+  year              Int
+  inputData         String    // JSON string of all inputs
+  resultsData       String    // JSON string of all calculated results
+  notes             String?   // User notes about this calculation
+  createdAt         DateTime  @default(now())
+  
+  @@index([userId])
+  @@index([businessId])
+  @@index([year])
+}
+
+// Export Log
+// Track all exports (PDF, Excel, Word)
+model ExportLog {
+  id                String    @id @default(cuid())
+  userId            String
+  businessId        String
+  exportType        String    // "pdf", "excel", "word"
+  calculationType   String    // "individual", "company", etc.
+  year              Int
+  fileName          String
+  createdAt         DateTime  @default(now())
+  
+  @@index([userId])
+  @@index([businessId])
+}
