@@ -1,11 +1,12 @@
 import { redirect } from 'next/navigation';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
-import { DashboardHeader } from '@/components/dashboard/dashboard-header';
 import { prisma } from '@/lib/db';
-import { ArrowLeft, Construction } from 'lucide-react';
+import { DashboardHeader } from '@/components/dashboard/dashboard-header';
+import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import CompanyCalculationForm from '@/components/calculation/company-calculation-form';
 
 export default async function CompanyCalculationPage({
   params,
@@ -13,7 +14,7 @@ export default async function CompanyCalculationPage({
   params: { businessId: string };
 }) {
   const session = await getServerSession(authOptions);
-
+  
   if (!session?.user?.id) {
     redirect('/auth/login');
   }
@@ -29,40 +30,55 @@ export default async function CompanyCalculationPage({
     redirect('/dashboard');
   }
 
+  const currentYear = new Date().getFullYear();
+  const previousYear = currentYear - 1;
+
+  // Fetch existing calculations
+  const [currentCalc, previousCalc] = await Promise.all([
+    prisma.companyCalculation.findUnique({
+      where: {
+        businessId_year: {
+          businessId: params.businessId,
+          year: currentYear,
+        },
+      },
+    }),
+    prisma.companyCalculation.findUnique({
+      where: {
+        businessId_year: {
+          businessId: params.businessId,
+          year: previousYear,
+        },
+      },
+    }),
+  ]);
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      <DashboardHeader user={session.user} />
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      <DashboardHeader user={{ name: session.user.name, email: session.user.email }} />
       
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Link 
-          href={`/business/${business.id}`}
-          className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900 mb-6"
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Επιστροφή στην Επιχείρηση
+      <div className="container mx-auto px-4 py-8">
+        <Link href={`/business/${params.businessId}`}>
+          <Button variant="ghost" className="mb-4">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Πίσω
+          </Button>
         </Link>
 
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-12 text-center">
-          <div className="flex justify-center mb-6">
-            <div className="bg-yellow-100 p-4 rounded-full">
-              <Construction className="h-12 w-12 text-yellow-600" />
-            </div>
-          </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-4">
-            Εταιρεία - Υπό Κατασκευή
+        <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            Εταιρεία - {business.businessName}
           </h1>
-          <p className="text-lg text-gray-600 mb-8 max-w-2xl mx-auto">
-            Η λειτουργία υπολογισμού φόρων για εταιρείες (22% εταιρικός φόρος) θα είναι διαθέσιμη σύντομα.
+          <p className="text-gray-600">
+            Φορολογία Εταιρειών: Σταθερός συντελεστής 22%
           </p>
-          <p className="text-sm text-gray-500 mb-8">
-            Χρησιμοποιήστε το σενάριο "Ατομική Επιχείρηση" για τους υπολογισμούς σας.
-          </p>
-          <Link href={`/business/${business.id}`}>
-            <Button size="lg" className="bg-blue-600 hover:bg-blue-700">
-              Επιστροφή στη Σελίδα Επιχείρησης
-            </Button>
-          </Link>
         </div>
+
+        <CompanyCalculationForm
+          businessId={params.businessId}
+          currentYearData={currentCalc}
+          previousYearData={previousCalc}
+        />
       </div>
     </div>
   );
