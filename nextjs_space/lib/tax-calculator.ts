@@ -384,25 +384,36 @@ export function calculateEmployeeIncome(
 
 /**
  * Combined Calculation Results (Individual + Company)
+ * Calculates each part separately and then combines
  */
 export interface CombinedCalculationResults {
-  resultBeforeTax: number;
-  adjustedResults: number;
-  taxableResults: number;
-  taxableIncome: number;
-  taxDue: number;
-  prepaymentNextYear: number;
-  totalTaxDeclaration: number;
-  minimumCardSpending: number;
-  solidarityContribution: number;
+  // Individual part
+  individualResultBeforeTax: number;
+  individualTaxableIncome: number;
+  individualTaxDue: number;
+  individualPrepayment: number;
+  individualTotalTaxDeclaration: number;
+  individualNetIncome: number;
+  
+  // Company part
+  companyResultBeforeTax: number;
+  companyTaxableResults: number;
+  companyTaxDue: number;
+  companyPrepayment: number;
+  companyTotalTaxDeclaration: number;
+  companyNetIncome: number;
+  
+  // Combined totals
   totalIncome: number;
   totalTaxes: number;
-  netIncome: number;
+  totalNetIncome: number;
+  totalPrepayment: number;
+  overallTaxDeclaration: number;
 }
 
 /**
  * Calculate combined individual and company income (Ατομική + Εταιρεία)
- * This combines values from both individual and company calculations
+ * Each source is calculated separately with its own tax rules, then combined
  */
 export function calculateCombined(
   individualInputs: {
@@ -438,64 +449,188 @@ export function calculateCombined(
     professionalFee: number;
   }
 ): CombinedCalculationResults {
-  // Sum all income statement items from both sources
-  const resultBeforeTax = 
-    (individualInputs.netTurnover + companyInputs.netTurnover) +
-    (individualInputs.otherOrdinaryIncome + companyInputs.otherOrdinaryIncome) +
-    (individualInputs.inventoryChanges + companyInputs.inventoryChanges) +
-    (individualInputs.purchasesGoodsMaterials + companyInputs.purchasesGoodsMaterials) +
-    (individualInputs.employeeBenefits + companyInputs.employeeBenefits) +
-    (individualInputs.depreciation + companyInputs.depreciation) +
-    (individualInputs.otherExpensesLosses + companyInputs.otherExpensesLosses) +
-    (individualInputs.otherIncomeGains + companyInputs.otherIncomeGains) +
-    (individualInputs.interestNet + companyInputs.interestNet);
-
-  const adjustedResults = resultBeforeTax + individualInputs.adjustments + companyInputs.adjustments;
-  const taxableResults = adjustedResults + individualInputs.carriedForwardLosses + companyInputs.carriedForwardLosses;
+  // Calculate individual business separately
+  const individualResults = calculateIndividualBusiness(individualInputs);
   
-  // Taxable Income = MAX(taxableResults, deemedTaxation)
-  const taxableIncome = Math.max(taxableResults, individualInputs.deemedTaxation);
-
-  // Calculate progressive tax on combined income
-  const taxDue = calculateProgressiveTax(taxableIncome);
-
-  // Combined withholdings
-  const totalWithholdings = individualInputs.businessWithholdings + companyInputs.businessWithholdings;
+  // Calculate company separately
+  const companyResults = calculateCompany(companyInputs);
   
-  // Prepayment: 55% of tax
-  const prepaymentNextYear = Math.max(0, taxDue * 0.55 - Math.abs(totalWithholdings));
-
-  // Total Tax Declaration
-  const totalTaxDeclaration = 
-    taxDue + 
-    prepaymentNextYear + 
-    totalWithholdings - 
-    (individualInputs.previousYearPrepayment + companyInputs.previousYearPrepayment) +
-    companyInputs.professionalFee;
-
-  const minimumCardSpending = calculateMinimumCardSpending(taxableIncome);
-  const solidarityContribution = calculateSolidarityContribution(taxableIncome);
-
-  // Summary
-  const totalIncome = taxableIncome;
-  const totalTaxes = taxDue + solidarityContribution + prepaymentNextYear - 
-    (individualInputs.previousYearPrepayment + companyInputs.previousYearPrepayment) + 
-    companyInputs.professionalFee;
-  const netIncome = totalIncome - totalTaxes;
+  // Combined totals
+  const totalIncome = individualResults.taxableIncome + companyResults.taxableResults;
+  const totalTaxes = individualResults.totalTaxes + companyResults.totalTaxes;
+  const totalNetIncome = individualResults.netIncome + companyResults.netIncome;
+  const totalPrepayment = individualResults.prepaymentNextYear + companyResults.prepaymentNextYear;
+  const overallTaxDeclaration = individualResults.totalTaxDeclaration + companyResults.totalTaxDeclaration;
 
   return {
-    resultBeforeTax: Math.round(resultBeforeTax * 100) / 100,
-    adjustedResults: Math.round(adjustedResults * 100) / 100,
-    taxableResults: Math.round(taxableResults * 100) / 100,
-    taxableIncome: Math.round(taxableIncome * 100) / 100,
-    taxDue: Math.round(taxDue * 100) / 100,
-    prepaymentNextYear: Math.round(prepaymentNextYear * 100) / 100,
-    totalTaxDeclaration: Math.round(totalTaxDeclaration * 100) / 100,
-    minimumCardSpending: Math.round(minimumCardSpending * 100) / 100,
-    solidarityContribution: Math.round(solidarityContribution * 100) / 100,
+    // Individual part
+    individualResultBeforeTax: individualResults.resultBeforeTax,
+    individualTaxableIncome: individualResults.taxableIncome,
+    individualTaxDue: individualResults.taxDue,
+    individualPrepayment: individualResults.prepaymentNextYear,
+    individualTotalTaxDeclaration: individualResults.totalTaxDeclaration,
+    individualNetIncome: individualResults.netIncome,
+    
+    // Company part
+    companyResultBeforeTax: companyResults.resultBeforeTax,
+    companyTaxableResults: companyResults.taxableResults,
+    companyTaxDue: companyResults.taxDue,
+    companyPrepayment: companyResults.prepaymentNextYear,
+    companyTotalTaxDeclaration: companyResults.totalTaxDeclaration,
+    companyNetIncome: companyResults.netIncome,
+    
+    // Combined totals
     totalIncome: Math.round(totalIncome * 100) / 100,
     totalTaxes: Math.round(totalTaxes * 100) / 100,
-    netIncome: Math.round(netIncome * 100) / 100,
+    totalNetIncome: Math.round(totalNetIncome * 100) / 100,
+    totalPrepayment: Math.round(totalPrepayment * 100) / 100,
+    overallTaxDeclaration: Math.round(overallTaxDeclaration * 100) / 100,
+  };
+}
+
+/**
+ * Full Combined Calculation Results (Individual + Company + Employee)
+ */
+export interface FullCombinedCalculationResults {
+  // Individual part
+  individualTaxableIncome: number;
+  individualTaxDue: number;
+  individualPrepayment: number;
+  
+  // Company part
+  companyTaxableResults: number;
+  companyTaxDue: number;
+  companyPrepayment: number;
+  
+  // Personal income (Individual + Employee combined with progressive tax)
+  personalTaxableIncome: number;
+  personalTaxDue: number;
+  solidarityContribution: number;
+  personalPrepayment: number;
+  minimumCardSpending: number;
+  
+  // Combined totals
+  totalGrossIncome: number;
+  totalTaxes: number;
+  totalPrepayments: number;
+  overallTaxDeclaration: number;
+  totalNetIncome: number;
+}
+
+/**
+ * Calculate full combined income from all sources (Πλήρης Συνδυασμός)
+ * Individual + Company (separate) + Employee (combined with Individual for personal tax)
+ */
+export function calculateFullCombined(
+  individualInputs: {
+    netTurnover: number;
+    otherOrdinaryIncome: number;
+    inventoryChanges: number;
+    purchasesGoodsMaterials: number;
+    employeeBenefits: number;
+    depreciation: number;
+    otherExpensesLosses: number;
+    otherIncomeGains: number;
+    interestNet: number;
+    adjustments: number;
+    carriedForwardLosses: number;
+    deemedTaxation: number;
+    businessWithholdings: number;
+    previousYearPrepayment: number;
+  },
+  companyInputs: {
+    netTurnover: number;
+    otherOrdinaryIncome: number;
+    inventoryChanges: number;
+    purchasesGoodsMaterials: number;
+    employeeBenefits: number;
+    depreciation: number;
+    otherExpensesLosses: number;
+    otherIncomeGains: number;
+    interestNet: number;
+    adjustments: number;
+    carriedForwardLosses: number;
+    businessWithholdings: number;
+    previousYearPrepayment: number;
+    professionalFee: number;
+  },
+  employeeInputs: {
+    employeeIncome: number;
+    taxReductions: number;
+    employeeWithholdings: number;
+  }
+): FullCombinedCalculationResults {
+  // Calculate individual business results
+  const individualResults = calculateIndividualBusiness(individualInputs);
+  
+  // Calculate company results (22% flat tax)
+  const companyResults = calculateCompany(companyInputs);
+  
+  // Personal Income = Individual business income + Employee income
+  // This gets progressive taxation
+  const personalTaxableIncome = individualResults.taxableIncome + employeeInputs.employeeIncome;
+  const personalGrossTax = calculateProgressiveTax(personalTaxableIncome);
+  const personalTaxDue = Math.max(0, personalGrossTax - employeeInputs.taxReductions);
+  
+  // Solidarity contribution on personal income
+  const solidarityContribution = calculateSolidarityContribution(personalTaxableIncome);
+  
+  // Personal prepayment (based on individual business tax only)
+  const personalPrepayment = Math.max(0, individualResults.taxDue * 0.55 - Math.abs(individualInputs.businessWithholdings));
+  
+  // Minimum card spending
+  const minimumCardSpending = calculateMinimumCardSpending(personalTaxableIncome);
+  
+  // Total gross income from all sources
+  const totalGrossIncome = personalTaxableIncome + companyResults.taxableResults;
+  
+  // Total taxes (personal tax + solidarity + company tax + professional fee)
+  const totalTaxes = 
+    personalTaxDue + 
+    solidarityContribution + 
+    companyResults.taxDue + 
+    companyInputs.professionalFee;
+  
+  // Total prepayments
+  const totalPrepayments = personalPrepayment + companyResults.prepaymentNextYear;
+  
+  // Overall tax declaration
+  const overallTaxDeclaration = 
+    personalTaxDue + 
+    personalPrepayment + 
+    employeeInputs.employeeWithholdings + 
+    individualInputs.businessWithholdings + 
+    companyResults.totalTaxDeclaration - 
+    individualInputs.previousYearPrepayment;
+  
+  // Total net income
+  const totalNetIncome = totalGrossIncome - totalTaxes - totalPrepayments + 
+    individualInputs.previousYearPrepayment + companyInputs.previousYearPrepayment;
+
+  return {
+    // Individual part
+    individualTaxableIncome: Math.round(individualResults.taxableIncome * 100) / 100,
+    individualTaxDue: Math.round(individualResults.taxDue * 100) / 100,
+    individualPrepayment: Math.round(personalPrepayment * 100) / 100,
+    
+    // Company part
+    companyTaxableResults: Math.round(companyResults.taxableResults * 100) / 100,
+    companyTaxDue: Math.round(companyResults.taxDue * 100) / 100,
+    companyPrepayment: Math.round(companyResults.prepaymentNextYear * 100) / 100,
+    
+    // Personal income (Individual + Employee)
+    personalTaxableIncome: Math.round(personalTaxableIncome * 100) / 100,
+    personalTaxDue: Math.round(personalTaxDue * 100) / 100,
+    solidarityContribution: Math.round(solidarityContribution * 100) / 100,
+    personalPrepayment: Math.round(personalPrepayment * 100) / 100,
+    minimumCardSpending: Math.round(minimumCardSpending * 100) / 100,
+    
+    // Combined totals
+    totalGrossIncome: Math.round(totalGrossIncome * 100) / 100,
+    totalTaxes: Math.round(totalTaxes * 100) / 100,
+    totalPrepayments: Math.round(totalPrepayments * 100) / 100,
+    overallTaxDeclaration: Math.round(overallTaxDeclaration * 100) / 100,
+    totalNetIncome: Math.round(totalNetIncome * 100) / 100,
   };
 }
 

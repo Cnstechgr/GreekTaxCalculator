@@ -50,17 +50,25 @@ export function CalculationScenarios({ businessId }: { businessId: string }) {
     },
     {
       id: 'individual_company',
-      title: 'Ατομική + Εταιρεία',
-      description: 'Συνδυασμένος υπολογισμός - Συγκριτικός πίνακας (Σύντομα)',
+      title: 'Ατομική + Εταιρεία ✓',
+      description: 'Συνδυασμένος υπολογισμός - Ξεχωριστή φορολόγηση',
       icon: <TrendingUp className="h-6 w-6" />,
       path: `/calculation/${businessId}/combined`,
       color: 'purple',
     },
     {
-      id: 'full',
-      title: 'Πλήρης Σύνδυασμός',
-      description: 'Όλες οι πηγές εισοδήματος - Ολοκληρωμένη ανάλυση (Σύντομα)',
+      id: 'comparison',
+      title: 'Πίνακας Σύγκρισης ✓',
+      description: 'Συγκρίνετε όλα τα σενάρια δίπλα-δίπλα',
       icon: <FileBarChart className="h-6 w-6" />,
+      path: `/calculation/${businessId}/compare`,
+      color: 'indigo',
+    },
+    {
+      id: 'full',
+      title: 'Πλήρης Συνδυασμός ✓',
+      description: 'Όλες οι πηγές εισοδήματος - Οδηγίες και πρόσβαση',
+      icon: <Calculator className="h-6 w-6" />,
       path: `/calculation/${businessId}/full`,
       color: 'red',
     },
@@ -72,6 +80,7 @@ export function CalculationScenarios({ businessId }: { businessId: string }) {
       green: { bg: 'bg-green-50', text: 'text-green-600', hover: 'hover:bg-green-100', border: 'border-green-200' },
       purple: { bg: 'bg-purple-50', text: 'text-purple-600', hover: 'hover:bg-purple-100', border: 'border-purple-200' },
       orange: { bg: 'bg-orange-50', text: 'text-orange-600', hover: 'hover:bg-orange-100', border: 'border-orange-200' },
+      indigo: { bg: 'bg-indigo-50', text: 'text-indigo-600', hover: 'hover:bg-indigo-100', border: 'border-indigo-200' },
       red: { bg: 'bg-red-50', text: 'text-red-600', hover: 'hover:bg-red-100', border: 'border-red-200' },
     };
     return colors[color] || colors.blue;

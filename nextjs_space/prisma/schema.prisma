@@ -82,6 +82,8 @@ model Business {
   individualCalculations  IndividualCalculation[]
   companyCalculations     CompanyCalculation[]
   employeeIncomes         EmployeeIncome[]
+  combinedCalculations    CombinedCalculation[]
+  fullCombinedCalculations FullCombinedCalculation[]
   
   @@index([userId])
   @@index([taxId])
@@ -218,6 +220,175 @@ model EmployeeIncome {
   totalIncome             Float?    // B39
   totalTaxes              Float?    // B40
   netIncome               Float?    // B41
+  
+  // Metadata
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+  
+  @@index([businessId])
+  @@index([year])
+  @@unique([businessId, year])
+}
+
+// Combined Calculation (Ατομική + Εταιρεία)
+// Combines individual business data with company data
+model CombinedCalculation {
+  id                      String    @id @default(cuid())
+  businessId              String
+  business                Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  
+  // Fiscal year
+  year                    Int
+  isPreviousYear          Boolean   @default(false)
+  
+  // Reference to individual and company calculation IDs (optional linking)
+  individualCalculationId String?
+  companyCalculationId    String?
+  
+  // INDIVIDUAL BUSINESS INPUTS (from Ατομική)
+  individualNetTurnover             Float     @default(0)
+  individualOtherOrdinaryIncome     Float     @default(0)
+  individualInventoryChanges        Float     @default(0)
+  individualPurchasesGoodsMaterials Float     @default(0)
+  individualEmployeeBenefits        Float     @default(0)
+  individualDepreciation            Float     @default(0)
+  individualOtherExpensesLosses     Float     @default(0)
+  individualOtherIncomeGains        Float     @default(0)
+  individualInterestNet             Float     @default(0)
+  individualAdjustments             Float     @default(0)
+  individualCarriedForwardLosses    Float     @default(0)
+  individualDeemedTaxation          Float     @default(0)
+  individualBusinessWithholdings    Float     @default(0)
+  individualPreviousYearPrepayment  Float     @default(0)
+  
+  // COMPANY INPUTS (from Εταιρεία)
+  companyNetTurnover             Float     @default(0)
+  companyOtherOrdinaryIncome     Float     @default(0)
+  companyInventoryChanges        Float     @default(0)
+  companyPurchasesGoodsMaterials Float     @default(0)
+  companyEmployeeBenefits        Float     @default(0)
+  companyDepreciation            Float     @default(0)
+  companyOtherExpensesLosses     Float     @default(0)
+  companyOtherIncomeGains        Float     @default(0)
+  companyInterestNet             Float     @default(0)
+  companyAdjustments             Float     @default(0)
+  companyCarriedForwardLosses    Float     @default(0)
+  companyBusinessWithholdings    Float     @default(0)
+  companyPreviousYearPrepayment  Float     @default(0)
+  companyProfessionalFee         Float     @default(0)
+  
+  // CALCULATED RESULTS - INDIVIDUAL PART
+  individualResultBeforeTax      Float?
+  individualTaxableIncome        Float?
+  individualTaxDue               Float?
+  individualPrepayment           Float?
+  individualTotalTaxDeclaration  Float?
+  individualNetIncome            Float?
+  
+  // CALCULATED RESULTS - COMPANY PART
+  companyResultBeforeTax         Float?
+  companyTaxableResults          Float?
+  companyTaxDue                  Float?
+  companyPrepayment              Float?
+  companyTotalTaxDeclaration     Float?
+  companyNetIncome               Float?
+  
+  // COMBINED RESULTS
+  totalIncome                    Float?    // Sum of both incomes
+  totalTaxes                     Float?    // Sum of both taxes
+  totalNetIncome                 Float?    // Sum of both net incomes
+  totalPrepayment                Float?    // Sum of both prepayments
+  overallTaxDeclaration          Float?    // Combined declaration
+  
+  // Metadata
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+  
+  @@index([businessId])
+  @@index([year])
+  @@unique([businessId, year])
+}
+
+// Full Combined Calculation (Πλήρης Συνδυασμός)
+// All income sources: Individual + Company + Employee
+model FullCombinedCalculation {
+  id                      String    @id @default(cuid())
+  businessId              String
+  business                Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  
+  // Fiscal year
+  year                    Int
+  isPreviousYear          Boolean   @default(false)
+  
+  // INDIVIDUAL BUSINESS INPUTS
+  individualNetTurnover             Float     @default(0)
+  individualOtherOrdinaryIncome     Float     @default(0)
+  individualInventoryChanges        Float     @default(0)
+  individualPurchasesGoodsMaterials Float     @default(0)
+  individualEmployeeBenefits        Float     @default(0)
+  individualDepreciation            Float     @default(0)
+  individualOtherExpensesLosses     Float     @default(0)
+  individualOtherIncomeGains        Float     @default(0)
+  individualInterestNet             Float     @default(0)
+  individualAdjustments             Float     @default(0)
+  individualCarriedForwardLosses    Float     @default(0)
+  individualDeemedTaxation          Float     @default(0)
+  individualBusinessWithholdings    Float     @default(0)
+  individualPreviousYearPrepayment  Float     @default(0)
+  
+  // COMPANY INPUTS
+  companyNetTurnover             Float     @default(0)
+  companyOtherOrdinaryIncome     Float     @default(0)
+  companyInventoryChanges        Float     @default(0)
+  companyPurchasesGoodsMaterials Float     @default(0)
+  companyEmployeeBenefits        Float     @default(0)
+  companyDepreciation            Float     @default(0)
+  companyOtherExpensesLosses     Float     @default(0)
+  companyOtherIncomeGains        Float     @default(0)
+  companyInterestNet             Float     @default(0)
+  companyAdjustments             Float     @default(0)
+  companyCarriedForwardLosses    Float     @default(0)
+  companyBusinessWithholdings    Float     @default(0)
+  companyPreviousYearPrepayment  Float     @default(0)
+  companyProfessionalFee         Float     @default(0)
+  
+  // EMPLOYEE INCOME INPUTS
+  employeeIncome                 Float     @default(0)
+  taxReductions                  Float     @default(0)
+  employeeWithholdings           Float     @default(0)
+  
+  // DEEMED TAXATION INDICATORS (for combined personal income)
+  houseSquareMeters              Float     @default(0)
+  carCC                          Float     @default(0)
+  motorcycleCC                   Float     @default(0)
+  poolSquareMeters               Float     @default(0)
+  domesticHelpMonths             Float     @default(0)
+  privateSchoolFees              Float     @default(0)
+  countryClubFees                Float     @default(0)
+  boatEnginePower                Float     @default(0)
+  
+  // CALCULATED RESULTS - BY SOURCE
+  individualTaxableIncome        Float?
+  individualTaxDue               Float?
+  individualPrepayment           Float?
+  
+  companyTaxableResults          Float?
+  companyTaxDue                  Float?
+  companyPrepayment              Float?
+  
+  // CALCULATED RESULTS - PERSONAL INCOME (Individual + Employee)
+  personalTaxableIncome          Float?    // Individual + Employee income
+  personalTaxDue                 Float?    // Progressive tax on combined personal
+  solidarityContribution         Float?    // Additional tax for high earners
+  personalPrepayment             Float?
+  minimumCardSpending            Float?
+  
+  // COMBINED TOTALS
+  totalGrossIncome               Float?    // All income sources
+  totalTaxes                     Float?    // All taxes combined
+  totalPrepayments               Float?    // All prepayments
+  overallTaxDeclaration          Float?    // Total tax to declare
+  totalNetIncome                 Float?    // After all taxes
   
   // Metadata
   createdAt               DateTime  @default(now())
