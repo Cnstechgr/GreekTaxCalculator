@@ -4,6 +4,7 @@ import { Calculator, LogOut, Plus } from 'lucide-react';
 import { signOut } from 'next-auth/react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 
 export function DashboardHeader({ user }: { user: { name?: string | null; email?: string | null } }) {
   const handleSignOut = async () => {
@@ -11,14 +12,14 @@ export function DashboardHeader({ user }: { user: { name?: string | null; email?
   };
 
   return (
-    <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
+    <header className="bg-background border-b border-border sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           <Link href="/dashboard" className="flex items-center gap-2">
             <div className="bg-blue-600 p-2 rounded-lg">
               <Calculator className="h-5 w-5 text-white" />
             </div>
-            <span className="font-bold text-lg text-gray-900">
+            <span className="font-bold text-lg">
               Φορολογικός Υπολογιστής
             </span>
           </Link>
@@ -33,9 +34,10 @@ export function DashboardHeader({ user }: { user: { name?: string | null; email?
 
             <div className="flex items-center gap-3">
               <div className="text-sm text-right">
-                <div className="font-medium text-gray-900">{user?.name}</div>
-                <div className="text-gray-500 text-xs">{user?.email}</div>
+                <div className="font-medium">{user?.name}</div>
+                <div className="text-muted-foreground text-xs">{user?.email}</div>
               </div>
+              <ThemeToggle />
               <Button
                 variant="ghost"
                 size="icon"

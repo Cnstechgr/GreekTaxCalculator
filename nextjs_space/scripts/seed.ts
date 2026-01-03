@@ -28,9 +28,9 @@ async function main() {
     create: {
       id: 'sample-business-1',
       userId: testUser.id,
-      businessName: 'ΛΙΧΑΣ ΠΑΝΑΓΙΩΤΗΣ',
+      businessName: 'ΠΑΠΑΔΟΠΟΥΛΟΣ ΓΕΩΡΓΙΟΣ',
       activity: 'ΕΜΠΟΡΙΟ Η/Υ',
-      address: 'ΑΝΔΡΙΤΣΑΙΝΗΣ 15 ΠΕΡΙΣΤΕΡΙ',
+      address: 'ΣΟΦΟΚΛΕΟΥΣ 12 ΑΘΗΝΑ',
       taxId: '134467717',
     },
   });
