@@ -9,7 +9,7 @@ A comprehensive web application for calculating Greek business taxes, supporting
 
 🌐 **Live Demo:** [https://abacus.taxstop.gr](https://abacus.taxstop.gr)
 
-## 📋 Table of Contents
+## 📋 Table of Contents 
 
 - [Features](#-features)
 - [Tax Scenarios](#-tax-scenarios)
