@@ -38,7 +38,7 @@ The application supports 7 calculation scenarios:
 6. **Ατομική & Μισθωτές + Εταιρεία** (Full Combination)
 7. **ΠΙΝΑΚΑΣ Ατομική & Μισθωτές + Εταιρεία** (Full Comparison)
 
----
+----
 
 ## 2. Architecture
 
