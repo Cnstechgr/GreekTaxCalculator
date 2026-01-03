@@ -19,4 +19,5 @@ out
 .logs
 *.tsbuildinfo
 
-
+# Abacus.AI metadata
+.abacus.donotdelete
