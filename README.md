@@ -227,9 +227,7 @@ All documentation is also available in PDF format.
 
 ### Production Deployment
 
-The application is deployed at:
-- **Primary:** [https://abacus.taxstop.gr](https://abacus.taxstop.gr)
-- **Mirror:** [https://taxstop.abacusai.app](https://taxstop.abacusai.app)
+The application is deployed at: [https://abacus.taxstop.gr](https://abacus.taxstop.gr)
 
 ### Deployment Options
 
