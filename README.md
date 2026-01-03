@@ -227,7 +227,7 @@ All documentation is also available in PDF format.
 
 ### Production Deployment
 
-The application is deployed at: [https://abacus.](https://abacus.)
+
 
 ### Deployment Options
 
