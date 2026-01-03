@@ -746,4 +746,4 @@ For technical questions or issues:
 
 **Document Version**: 1.0  
 **Last Updated**: December 19, 2025  
-**Author**: Abacus.AI DeepAgent
+**Author**: Cnstech.gr
