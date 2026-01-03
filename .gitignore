@@ -18,3 +18,6 @@ out
 .deploy
 .logs
 *.tsbuildinfo
+
+# Abacus.AI metadata
+.abacus.donotdelete
