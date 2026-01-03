@@ -227,7 +227,7 @@ All documentation is also available in PDF format.
 
 ### Production Deployment
 
-The application is deployed at: [https://abacus.taxstop.gr](https://abacus.taxstop.gr)
+The application is deployed at: [https://abacus.](https://abacus.)
 
 ### Deployment Options
 
@@ -330,8 +330,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 For support or questions:
 - Open an issue on GitHub
-- Visit [https://taxstop.gr](https://taxstop.gr)
-- Email: support@taxstop.gr
+- Visit [https://cnstech.gr](https://cnstech.gr)
+- Email: info@cnstech.gr
 
 ## 🗺️ Roadmap
 
